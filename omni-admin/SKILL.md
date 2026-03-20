@@ -266,7 +266,7 @@ curl -s -H "Authorization: Bearer $OMNI_API_KEY" \
 ```bash
 curl -s -X POST \
   -H "Authorization: Bearer $OMNI_API_KEY" \
-  "$OMNI_BASE_URL/api/v1/connections/{connectionId}/refresh-schema"
+  "$OMNI_BASE_URL/api/v1/models/{modelId}/refresh"
 ```
 
 ---
