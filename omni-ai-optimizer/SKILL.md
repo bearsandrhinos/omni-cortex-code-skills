@@ -1,13 +1,13 @@
 ---
 name: omni-ai-optimizer
-description: "Optimize your Omni Analytics model for Blobby, Omni's AI assistant — configure ai_context, ai_fields, sample_queries, and create AI-specific topic extensions. Use when: someone wants to improve AI accuracy in Omni, make Blobby smarter, configure AI context, add example questions, tune AI responses, set up sample queries, curate fields for AI, create AI-optimized topics, or troubleshoot why Blobby gives wrong answers. Triggers: make the AI better, Blobby isn't answering correctly, add context for AI, optimize for AI, teach the AI about our data."
+description: Optimize your Omni Analytics model for Blobby, Omni's AI assistant — configure ai_context, ai_fields, sample_queries, and create AI-specific topic extensions. Use this skill whenever someone wants to improve AI accuracy in Omni, make Blobby smarter, configure AI context, add example questions, tune AI responses, set up sample queries, curate fields for AI, create AI-optimized topics, troubleshoot why Blobby gives wrong answers, or any variant of "make the AI better", "Blobby isn't answering correctly", "add context for AI", "optimize for AI", or "teach the AI about our data".
 ---
 
 # Omni AI Optimizer
 
-Tune Omni's AI assistant (Blobby) by configuring `ai_context`, `ai_fields`, `sample_queries`, and topic extensions.
+Optimize your Omni semantic model so Blobby (Omni's AI assistant) returns accurate, contextual answers.
 
----
+> **Tip**: Use `omni-model-explorer` to inspect current AI context before making changes.
 
 ## Prerequisites
 
@@ -16,221 +16,225 @@ export OMNI_BASE_URL="https://yourorg.omniapp.co"
 export OMNI_API_KEY="your-api-key"
 ```
 
-**Required permissions:** Modeler or Connection Admin role.
+Requires **Modeler** or **Connection Admin** permissions.
 
-> Always work on a branch — use `omni-model-builder` to create one before making changes.
+## API Discovery
 
----
-
-## How Blobby Uses Your Model
-
-Blobby analyzes the following when answering questions, in order of impact:
-
-| Signal | Impact |
-|---|---|
-| `ai_context` | Highest — sets terminology, rules, and perspective |
-| `ai_fields` | High — controls which fields Blobby can see |
-| `sample_queries` | Medium — teaches by example |
-| `synonyms` | Medium — maps alternative names to fields |
-| `descriptions` | Lower — adds field-level context |
-
----
-
-## Optimization Workflow
-
-```
-1. Inspect current state     →   review topic and view YAML
-2. Review AI usage data      →   identify common questions / failures
-3. Write ai_context          →   set rules and terminology
-4. Curate ai_fields          →   reduce noise in large models
-5. Add sample_queries        →   teach by example
-6. Add synonyms              →   map business terms to fields
-7. Refine descriptions       →   clarify ambiguous fields
-8. Consider topic variants   →   create AI-specific topic extensions
-9. Test iteratively          →   run questions through Blobby
-```
-
----
-
-## 1. Writing `ai_context`
-
-Add `ai_context` to your topic YAML. Use it to set:
-- **Terminology mapping** — what business terms mean in data terms
-- **Behavioral rules** — default filters, date logic, scope
-- **Data nuances** — edge cases, exclusions, caveats
-- **Analytical perspective** — how to frame answers
-
-```yaml
-# in your topic YAML
-ai_context: |
-  This topic covers e-commerce order performance.
-
-  Key rules:
-  - Always filter out 'Returned' and 'Cancelled' orders unless the user specifically asks about them.
-  - "Revenue" means total_sale_price, not gross_revenue.
-  - Use order_items.created_at for all date filtering unless the user specifies otherwise.
-  - "Customer" refers to a unique user_id, not a session.
-
-  Data notes:
-  - Orders before 2020-01-01 may have incomplete status data.
-  - The 'Pending' status means the order has not yet been confirmed.
-```
-
----
-
-## 2. Curating `ai_fields`
-
-Use `ai_fields` to control which fields Blobby sees. This is especially useful for large models with many redundant or technical fields.
-
-```yaml
-# in your topic YAML
-ai_fields:
-  - order_items.*              # all fields from order_items
-  - users.country              # specific field
-  - users.state
-  - products.brand
-  - products.category
-  - tag:kpi                    # all fields tagged "kpi"
-  - -order_items.internal_id   # exclude with - prefix
-  - -order_items.raw_json
-```
-
-### Field targeting rules
-
-| Syntax | Meaning |
-|---|---|
-| `view.*` | All fields in a view |
-| `all_views.*` | All fields across all views |
-| `view.field` | A specific field |
-| `tag:<value>` | All fields with this tag |
-| `-view.field` | Exclude this field |
-
----
-
-## 3. Adding `sample_queries`
-
-Sample queries teach Blobby by example. Pull verified queries from existing workbooks and add them to the topic.
-
-```yaml
-sample_queries:
-  Monthly Revenue Trend:
-    query:
-      fields:
-        - "order_items.created_at[month]"
-        - order_items.total_sale_price
-      base_view: order_items
-      filters:
-        order_items.status:
-          not: [ Returned, Cancelled ]
-      sorts:
-        - field: "order_items.created_at[month]"
-      limit: 500
-    description: Monthly revenue trend excluding returns and cancellations
-    prompt: What is our monthly revenue trend?
-
-  Revenue by Country:
-    query:
-      fields:
-        - users.country
-        - order_items.total_sale_price
-      base_view: order_items
-      filters:
-        order_items.status:
-          not: [ Returned, Cancelled ]
-      sorts:
-        - field: order_items.total_sale_price
-          desc: true
-      limit: 50
-    description: Total revenue broken down by user country
-    prompt: Which countries drive the most revenue?
-```
-
----
-
-## 4. Adding `synonyms`
-
-Add synonyms to individual field definitions in view YAML to map business terms:
-
-```yaml
-dimensions:
-  user_id:
-    sql: '"USER_ID"'
-    label: Customer ID
-    synonyms: [ customer, buyer, shopper, account ]
-
-measures:
-  total_sale_price:
-    sql: ${sale_price}
-    aggregate_type: sum
-    label: Total Revenue
-    synonyms: [ revenue, sales, income, receipts, GMV ]
-```
-
----
-
-## 5. Creating AI-Specific Topic Extensions
-
-For complex models, create a dedicated AI-optimized topic that extends the base topic with curated fields and context:
-
-```yaml
-# order_items_ai.topic.yaml
-label: Order Items (AI)
-extends: order_items
-
-ai_fields:
-  - order_items.created_at
-  - order_items.total_sale_price
-  - order_items.order_count
-  - order_items.status
-  - users.country
-  - users.state
-  - products.brand
-  - products.category
-
-ai_context: |
-  Optimized topic for AI analysis of order performance.
-  Default to this topic for all revenue and order questions.
-  Always exclude Returned and Cancelled orders.
-```
-
----
-
-## Applying Changes via API
-
-Read the current topic YAML:
+When unsure whether an endpoint or parameter exists, fetch the OpenAPI spec:
 
 ```bash
-curl -s -H "Authorization: Bearer $OMNI_API_KEY" \
-  "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml?filename=order_items.topic.yaml"
+curl -L "$OMNI_BASE_URL/openapi.json" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
 ```
 
-Write the updated YAML to a branch:
+Use this to verify endpoints, available parameters, and request/response schemas before making calls.
+
+## How Blobby Works
+
+Blobby generates queries by examining:
+
+1. **Topic structure** — which views and fields are joined
+2. **Field labels and descriptions** — how fields are named
+3. **`synonyms`** — alternative names for fields
+4. **`ai_context`** — explicit instructions you write
+5. **`ai_fields`** — which fields are visible to AI
+6. **`sample_queries`** — example questions with correct queries
+7. **Hidden fields** — `hidden: true` fields are excluded
+
+Impact order: ai_context > ai_fields > sample_queries > synonyms > field descriptions.
+
+## Writing ai_context
+
+Add via the YAML API:
 
 ```bash
-curl -s -X PUT \
+curl -L -X POST "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml" \
   -H "Authorization: Bearer $OMNI_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "filename": "order_items.topic.yaml",
-    "content": "<updated yaml>"
-  }' \
-  "$OMNI_BASE_URL/api/v1/models/{branchModelId}/yaml"
+    "fileName": "order_transactions.topic",
+    "yaml": "base_view: order_items\nlabel: Order Transactions\nai_context: |\n  Map \"revenue\" → total_revenue. Map \"orders\" → count.\n  Map \"customers\" → unique_users.\n  Status values: complete, pending, cancelled, returned.\n  Only complete orders for revenue unless specified otherwise.",
+    "mode": "extension",
+    "commitMessage": "Add AI context to order transactions topic"
+  }'
 ```
 
----
+### What Makes Good ai_context
 
-## Testing
+**Terminology mapping** — map business language to field names:
 
-After applying changes, test by asking Blobby the same questions that were previously failing and verify:
-- Correct fields are selected
-- Default filters are applied
-- Terminology is interpreted correctly
-- Results match expectations
+```yaml
+ai_context: |
+  "revenue" or "sales" → order_items.total_revenue
+  "orders" → order_items.count
+  "customers" → users.count or order_items.unique_users
+  "AOV" → order_items.average_order_value
+```
 
----
+**Data nuances** — explain what isn't obvious from field names:
+
+```yaml
+ai_context: |
+  Each row is a line item, not an order. One order has multiple line items.
+  total_revenue already excludes returns and cancellations.
+  Dates are in UTC.
+```
+
+**Behavioral guidance** — direct common patterns:
+
+```yaml
+ai_context: |
+  For trends, default to weekly granularity, sort ascending.
+  For "top N", sort descending and limit to 10.
+```
+
+**Persona prompting** — set the analytical perspective:
+
+```yaml
+ai_context: |
+  You are the head of finance analyzing customer payment data.
+  Default to monetary values in USD with 2 decimal places.
+```
+
+## Curating Fields with ai_fields
+
+Reduce noise for large models:
+
+```yaml
+ai_fields:
+  - all_views.*
+  - -tag:internal
+  - -distribution_centers.*
+
+# Or explicit list
+ai_fields:
+  - order_items.created_at
+  - order_items.total_revenue
+  - order_items.count
+  - users.name
+  - users.state
+  - products.category
+```
+
+Same operators as topic `fields`: wildcard (`*`), negation (`-`), tags (`tag:`).
+
+## Adding sample_queries
+
+Teach Blobby by example. Build the correct query in a workbook, retrieve its structure, then add to the topic YAML:
+
+```yaml
+sample_queries:
+  revenue_by_month:
+    prompt: "What month has the highest revenue?"
+    ai_context: "Use total_revenue grouped by month, sorted descending, limit 1"
+    query:
+      base_view: order_items
+      fields:
+        - order_items.created_at[month]
+        - order_items.total_revenue
+      topic: order_transactions
+      limit: 1
+      sorts:
+        - field: order_items.total_revenue
+          desc: true
+```
+
+> **Note**: When exporting queries from Omni's workbook, you'll get JSON with `table`, `join_paths_from_topic_name`, and `sorts` using `column_name`/`sort_descending`. Map these to YAML as follows:
+> - `table` → `base_view`
+> - `join_paths_from_topic_name` → `topic`
+> - `column_name` → `field`, `sort_descending` → `desc`
+> - Workbook JSON includes `filters`, `pivots`, `limit`, `column_limit` which you can include in YAML (though filter syntax requires consulting the [Model YAML API docs](https://docs.omni.co/api/models.md) directly)
+
+Focus on questions users actually ask — check Analytics > AI usage in Omni.
+
+## AI-Specific Topic Extensions
+
+Create a curated topic variant for Blobby using `extends`:
+
+```yaml
+# ai_order_transactions.topic
+extends: [order_items]
+label: AI - Order Transactions
+
+fields:
+  - order_items.created_at
+  - order_items.status
+  - order_items.total_revenue
+  - order_items.count
+  - users.name
+  - users.state
+  - products.category
+
+ai_context: |
+  Curated view of order data for AI analysis.
+  [detailed context here]
+
+sample_queries:
+  top_categories_last_month:
+    prompt: "Top selling categories last month?"
+    query:
+      base_view: order_items
+      fields:
+        - products.category
+        - order_items.total_revenue
+      topic: ai_order_transactions
+      limit: 10
+      sorts:
+        - field: order_items.total_revenue
+          desc: true
+```
+
+## Improving Field Descriptions
+
+```yaml
+dimensions:
+  status:
+    label: Order Status
+    description: >
+      Current fulfillment status. Values: complete, pending, cancelled, returned.
+      Use 'complete' for revenue calculations.
+```
+
+Good descriptions help both Blobby and human analysts.
+
+## Adding synonyms
+
+Map alternative names, abbreviations, and domain-specific terminology so Blobby matches user queries to the correct field. Works on both dimensions and measures.
+
+```yaml
+dimensions:
+  customer_name:
+    synonyms: [client, account, buyer, purchaser]
+  order_date:
+    synonyms: [purchase date, transaction date, order timestamp]
+
+measures:
+  total_revenue:
+    synonyms: [sales, income, earnings, gross revenue, top line]
+  average_order_value:
+    synonyms: [AOV, avg order, basket size]
+```
+
+**Synonyms vs ai_context**: Use `synonyms` for field-level name mapping. Use `ai_context` for topic-level behavioral guidance, data nuances, and multi-field relationships.
+
+## Optimization Checklist
+
+1. Inspect current state with `omni-model-explorer`
+2. Check AI usage dashboard for real user questions
+3. Write `ai_context` mapping business terms to fields
+4. Add `synonyms` to key dimensions and measures
+5. Curate `ai_fields` to remove noise
+6. Add `sample_queries` for top 3-5 questions
+7. Improve field `description` values
+8. Consider `extends` for AI-specific topic variants
+9. Test iteratively — ask Blobby and refine
+
+## Docs Reference
+
+- [Optimizing Models for AI](https://docs.omni.co/ai/optimize-models.md) · [Synonyms](https://docs.omni.co/modeling/dimensions/parameters/synonyms) · [Topic Parameters](https://docs.omni.co/modeling/topics/parameters.md) · [Model YAML API](https://docs.omni.co/api/models.md) · [Omni AI Overview](https://docs.omni.co/ai.md)
 
 ## Related Skills
 
-- **omni-model-explorer** — inspect the current topic and field definitions
-- **omni-model-builder** — create branches and write YAML changes
-- **omni-query** — verify query results after optimization
+- **omni-model-explorer** — inspect existing AI context
+- **omni-model-builder** — modify views and topics
+- **omni-query** — test queries to verify Blobby's output
