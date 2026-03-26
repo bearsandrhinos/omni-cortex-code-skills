@@ -460,6 +460,58 @@ curl -L "$OMNI_BASE_URL/api/v1/dashboards/{dashboardId}/download/{jobId}/status"
 
 - [Documents API](https://docs.omni.co/api/documents.md) · [Dashboard Filters](https://docs.omni.co/api/dashboard-filters.md) · [Dashboard Downloads](https://docs.omni.co/api/dashboard-downloads.md) · [Query API](https://docs.omni.co/api/queries.md) · [Schedules API](https://docs.omni.co/api/schedules.md) · [Visualization Types](https://docs.omni.co/visualize-present/visualizations.md)
 
+## Cloning a Dashboard from an Example
+
+When a user provides an example dashboard, you can export its full configuration and use it as a template to create a new dashboard via import.
+
+> ⚠️ Both endpoints are in **beta** (`/unstable/`) and may have breaking changes.
+
+### Step 1 — Export the example dashboard
+
+```bash
+curl -s -X GET \
+  -H "Authorization: Bearer $OMNI_API_KEY" \
+  "$OMNI_BASE_URL/api/unstable/documents/{dashboardId}/export"
+```
+
+The response contains everything needed to recreate the dashboard:
+
+| Field | Description |
+|---|---|
+| `dashboard` | Dashboard configuration |
+| `document` | Document metadata |
+| `exportVersion` | Always `"0.1"` |
+| `workbookModel` | Workbook model data |
+| `fileUploads` | Base64-encoded spreadsheet file data (if any) |
+
+> ⚠️ Organization API Keys only — Personal Access Tokens (PATs) are **not supported** for export.
+
+### Step 2 — Modify the config
+
+Adapt the exported payload as needed (rename tiles, swap fields, change filters, etc.) before importing.
+
+### Step 3 — Import as a new dashboard
+
+```bash
+curl -s -X POST \
+  -H "Authorization: Bearer $OMNI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "baseModelId": "<destination-model-uuid>",
+    "dashboard": <dashboard object from export>,
+    "document": <document object from export>,
+    "workbookModel": <workbookModel object from export>,
+    "exportVersion": "0.1",
+    "folderPath": "Optional/Target/Folder",
+    "fileUploads": <fileUploads array from export, if any>
+  }' \
+  "$OMNI_BASE_URL/api/unstable/documents/import"
+```
+
+The response returns the new `dashboard.dashboardId`, `miniUuidMap`, and `workbook`.
+
+---
+
 ## Related Skills
 
 - **omni-model-explorer** — understand available fields
