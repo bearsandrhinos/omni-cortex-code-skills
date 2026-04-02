@@ -12,8 +12,12 @@ Converts an Omni topic into a Snowflake Semantic View YAML definition by first e
 ## Prerequisites
 
 ```bash
+command -v omni >/dev/null || curl -fsSL https://raw.githubusercontent.com/exploreomni/cli/main/install.sh | sh
+```
+
+```bash
 export OMNI_BASE_URL="https://yourorg.omniapp.co"
-export OMNI_API_KEY="your-api-key"
+export OMNI_API_TOKEN="your-api-key"
 ```
 
 ---
@@ -37,24 +41,21 @@ Ask the user:
 #### 2a. Find the model ID
 
 ```bash
-curl -s -H "Authorization: Bearer $OMNI_API_KEY" \
-  "$OMNI_BASE_URL/api/v1/models"
+omni models list --modelkind SHARED
 ```
 
-Identify the **Shared Model** and note its `modelId`. Always prefer the Shared Model over Schema or Workbook models.
+Identify the **Shared Model** and note its `id`. Always prefer the Shared Model over Schema or Workbook models.
 
 #### 2b. Fetch the topic file
 
 ```bash
-curl -s -H "Authorization: Bearer $OMNI_API_KEY" \
-  "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml?filename={topic_name}.topic.yaml"
+omni models yaml-get <modelId> --file-name <topic_name>.topic
 ```
 
 #### 2c. Fetch the relationships file
 
 ```bash
-curl -s -H "Authorization: Bearer $OMNI_API_KEY" \
-  "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml?filename=relationships.yaml"
+omni models yaml-get <modelId> --file-name relationships
 ```
 
 #### 2d. Fetch each view file referenced in the topic
@@ -62,11 +63,10 @@ curl -s -H "Authorization: Bearer $OMNI_API_KEY" \
 For every view in `base_view` and `joins`, fetch its YAML:
 
 ```bash
-curl -s -H "Authorization: Bearer $OMNI_API_KEY" \
-  "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml?filename={view_name}.view.yaml"
+omni models yaml-get <modelId> --file-name <view_name>.view
 ```
 
-> If a view is prefixed with `omni_dbt_`, fetch the file that also starts with `omni_dbt_` (e.g. `omni_dbt_ecomm__order_items.view.yaml`).
+> If a view is prefixed with `omni_dbt_`, fetch the file that also starts with `omni_dbt_` (e.g. `omni_dbt_ecomm__order_items.view`).
 
 ---
 

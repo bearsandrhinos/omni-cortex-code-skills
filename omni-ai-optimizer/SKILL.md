@@ -12,22 +12,22 @@ Optimize your Omni semantic model so Blobby (Omni's AI assistant) returns accura
 ## Prerequisites
 
 ```bash
+command -v omni >/dev/null || curl -fsSL https://raw.githubusercontent.com/exploreomni/cli/main/install.sh | sh
+```
+
+```bash
 export OMNI_BASE_URL="https://yourorg.omniapp.co"
-export OMNI_API_KEY="your-api-key"
+export OMNI_API_TOKEN="your-api-key"
 ```
 
 Requires **Modeler** or **Connection Admin** permissions.
 
-## API Discovery
-
-When unsure whether an endpoint or parameter exists, fetch the OpenAPI spec:
+## Discovering Commands
 
 ```bash
-curl -L "$OMNI_BASE_URL/openapi.json" \
-  -H "Authorization: Bearer $OMNI_API_KEY"
+omni models --help                    # List all model operations
+omni models yaml-create --help        # Show flags for writing YAML
 ```
-
-Use this to verify endpoints, available parameters, and request/response schemas before making calls.
 
 ## How Blobby Works
 
@@ -48,15 +48,12 @@ Impact order: ai_context > ai_fields > sample_queries > synonyms > field descrip
 Add via the YAML API:
 
 ```bash
-curl -L -X POST "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml" \
-  -H "Authorization: Bearer $OMNI_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fileName": "order_transactions.topic",
-    "yaml": "base_view: order_items\nlabel: Order Transactions\nai_context: |\n  Map \"revenue\" → total_revenue. Map \"orders\" → count.\n  Map \"customers\" → unique_users.\n  Status values: complete, pending, cancelled, returned.\n  Only complete orders for revenue unless specified otherwise.",
-    "mode": "extension",
-    "commitMessage": "Add AI context to order transactions topic"
-  }'
+omni models yaml-create <modelId> --body '{
+  "fileName": "order_transactions.topic",
+  "yaml": "base_view: order_items\nlabel: Order Transactions\nai_context: |\n  Map \"revenue\" → total_revenue. Map \"orders\" → count.\n  Map \"customers\" → unique_users.\n  Status values: complete, pending, cancelled, returned.\n  Only complete orders for revenue unless specified otherwise.",
+  "mode": "extension",
+  "commitMessage": "Add AI context to order transactions topic"
+}'
 ```
 
 ### What Makes Good ai_context
@@ -139,12 +136,6 @@ sample_queries:
           desc: true
 ```
 
-> **Note**: When exporting queries from Omni's workbook, you'll get JSON with `table`, `join_paths_from_topic_name`, and `sorts` using `column_name`/`sort_descending`. Map these to YAML as follows:
-> - `table` → `base_view`
-> - `join_paths_from_topic_name` → `topic`
-> - `column_name` → `field`, `sort_descending` → `desc`
-> - Workbook JSON includes `filters`, `pivots`, `limit`, `column_limit` which you can include in YAML (though filter syntax requires consulting the [Model YAML API docs](https://docs.omni.co/api/models.md) directly)
-
 Focus on questions users actually ask — check Analytics > AI usage in Omni.
 
 ## AI-Specific Topic Extensions
@@ -195,11 +186,7 @@ dimensions:
       Use 'complete' for revenue calculations.
 ```
 
-Good descriptions help both Blobby and human analysts.
-
 ## Adding synonyms
-
-Map alternative names, abbreviations, and domain-specific terminology so Blobby matches user queries to the correct field. Works on both dimensions and measures.
 
 ```yaml
 dimensions:
