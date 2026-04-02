@@ -1,6 +1,11 @@
-# Omni Analytics — Cortex Code Skills
+```
+  ___  __  __ _  _ ___    ___ ___  ___ _____ _____  __   ___ _  ___ _    _    ___
+ / _ \|  \/  | \| |_ _|  / __/ _ \| _ \_   _| __\ \/ /  / __| |/ /_ _| |  | |  / __|
+| (_) | |\/| | .` || |  | (_| (_) |   / | | | _| >  <   \__ \ ' < | || |__| |__\__ \
+ \___/|_|  |_|_|\_|___|  \___\___/|_|_\ |_| |___/_/\_\  |___/_|\_\___|____|____|___/
+```
 
-A collection of [Cortex Code](https://docs.snowflake.com/en/user-guide/cortex-code) skills for working with [Omni Analytics](https://omni.co). These skills let Cortex Code's AI agent interact with Omni's REST API to explore models, run queries, build dashboards, manage users, and more — all from your IDE.
+A collection of Claude Code skills for working with [Omni Analytics](https://omni.co). These skills let Claude's AI agent interact with Omni via the [Omni CLI](https://github.com/exploreomni/cli) and REST API to explore models, run queries, build dashboards, manage users, and more — all from your IDE.
 
 ---
 
@@ -38,7 +43,7 @@ All skills use two environment variables for authentication. Set these in your s
 
 ```bash
 export OMNI_BASE_URL="https://yourorg.omniapp.co"
-export OMNI_API_KEY="your-api-key"
+export OMNI_API_TOKEN="your-api-key"
 ```
 
 **Getting your API key:**
